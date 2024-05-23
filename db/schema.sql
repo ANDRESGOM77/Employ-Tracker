@@ -1,7 +1,7 @@
-DROP DATABASE IF EXIST Company;
-CREATE DATABASE company;
+DROP DATABASE IF EXIST Company_db;
+CREATE DATABASE company_db;
 
-\c company;
+\c company_db;
 
 CREATE TABLE department (
     department_id SERIAL PRIMARY KEY,
