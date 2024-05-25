@@ -72,3 +72,27 @@ const pool = new Pool(
             break;
   }})};
 
+function viewDepartments(){
+    pool.query('SELECT * FROM departments', (err, res)=>{
+        if(err){
+            console.log(err);
+            return;
+        }
+        console.log(res.rows);
+        init();
+    })
+}
+
+function viewRoles(){
+    pool.query('SELECT * FROM roles', (err, res)=>{
+        if(err){
+            console.log(err);
+            return;
+        }
+        console.log(res.rows);
+        init();
+    })
+}
+app.listen(PORT, ()=>{
+    console.log(`Listening on port ${PORT}`);
+})

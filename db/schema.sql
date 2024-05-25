@@ -1,24 +1,30 @@
-DROP DATABASE IF EXIST Company_db;
+DROP DATABASE IF EXIST company_db;
 CREATE DATABASE company_db;
 
 \c company_db;
 
 CREATE TABLE department (
-    department_id SERIAL PRIMARY KEY,
+    department_id INT  NOT NULL AUTO_INCREMENT,
+    PRIMARY KEY (department_id),
     department_name VARCHAR(30) UNIQUE NOT NULL
 );
 
-CREATE TABLE role(
-    role_id SERIAL PRIMARY KEY,
-    role_title VARCHAR(30) UNIQUE NOT NULL,
-    role_salary DECIMAL NOT NULL,
-    FOREIGN KEY department_id INTEGER NOT NULL REFERENCES department(department_id)
+CREATE TABLE roles(
+    roles_id INTEGER NOT NULL,
+    title VARCHAR(30) NOT NULL,
+    salary DECIMAL(10, 2) NOT NULL,
+    department_id INTEGER NOT NULL,
+    PRIMARY KEY (roles_id),
+    FOREIGN KEY (department_id) REFERENCES department(department_id)
 );
 
 CREATE TABLE employee(
-    employee_id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL,
     first_name VARCHAR(30) NOT NULL,
     last_name VARCHAR(30) NOT NULL,
-    FOREIGN KEY role_id INTEGER NOT NULL REFERENCES role(role_id),
-    FOREIGN KEY manager_id INTEGER REFERENCES employee(employee_id)
+    roles_id INTEGER NOT NULL,
+    manager_id INTEGER NOT NULL,
+    PRIMARY KEY (employee_id)
+    FOREIGN KEY (roles_id) REFERENCES roles(roles_id),
+    FOREIGN KEY (manager_id) REFERENCES employee(employee_id)
 );
