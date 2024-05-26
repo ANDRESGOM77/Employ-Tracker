@@ -4,12 +4,12 @@ CREATE DATABASE employeetracker_db;
 \c employeetracker_db;
 
 CREATE TABLE departments (
-    department_id SERIAL NOT NULL PRIMARY KEY,
+    id SERIAL NOT NULL PRIMARY KEY,
     department_name VARCHAR(30) UNIQUE NOT NULL
 );
 
 CREATE TABLE roles (
-    roles_id INTEGER NOT NULL PRIMARY KEY,
+    id SERIAL NOT NULL PRIMARY KEY,
     title VARCHAR(30) NOT NULL,
     salary DECIMAL(10, 2) NOT NULL,
     department_id INTEGER NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE roles (
 );
 
 CREATE TABLE employee (
-    employee_id INTEGER NOT NULL PRIMARY KEY,
+    id SERIAL NOT NULL PRIMARY KEY,
     first_name VARCHAR(30) NOT NULL,
     last_name VARCHAR(30) NOT NULL,
     roles_id INTEGER NOT NULL,
