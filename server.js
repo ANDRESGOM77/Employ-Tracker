@@ -13,7 +13,7 @@ const pool = new Pool(
       user: 'postgres',
       password: 'Manolo19',
       host: 'localhost',
-      database: 'company_db'
+      database: 'employeetracker_db'
     },
     console.log(`Connected to the company_db database.`)
   )
@@ -84,7 +84,7 @@ function viewDepartments(){
 }
 
 function viewRoles(){
-    pool.query('SELECT * FROM roles', (err, res)=>{
+    pool.query('SELECT roles.title, roles.id, departments.department_name, roles.salary from roles join departments on roles.department_id = departments.id', (err, res)=>{
         if(err){
             console.log(err);
             return;
@@ -93,6 +93,45 @@ function viewRoles(){
         init();
     })
 }
+
+function viewEmployees(){
+    const query= `   
+    SELECT e.id, e.first_name, e.last_name, r.title, d.department_name, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager_name
+    FROM employee e
+    LEFT JOIN roles r ON e.roles_id = r.id
+    LEFT JOIN departments d ON r.department_id = d.id
+    LEFT JOIN employee m ON e.manager_id = m.id;`
+
+    pool.query(query, (err, res)=>{
+        if(err){
+            console.log(err);
+            return;
+        }
+        console.log(res.rows);
+        init();
+    })
+}
+
+async function addDepartment(){
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'department_name',
+            message: 'What is the name of the department you would like to add?'
+        }
+    ])
+    await pool.query('INSERT INTO departments (department_name) VALUES ($1)', [answer.department_name], (err, res)=>{
+            if(err){
+                console.log(err);
+                return;
+            }
+            console.log(res.rows);
+            init();
+        })
+    }
+
+
+function addRole(){}
 app.listen(PORT, ()=>{
     console.log(`Listening on port ${PORT}`);
 })
