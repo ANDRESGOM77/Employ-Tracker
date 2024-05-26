@@ -1,6 +1,7 @@
 const inquirer = require('inquirer');
 const { Pool } = require('pg');
 const express = require('express');
+const cfonts = require('cfonts');
 
 const PORT = process.env.PORT || 5001;
 const app = express();
@@ -26,6 +27,18 @@ pool.connect(err => {
     init();
 }
 );
+
+cfonts.say('EMPLOYEE TRACKER',{
+    font: 'block',
+    align: 'center',
+    colors: ['greenBright'],
+    background: 'transparent',
+    letterSpacing: 1,
+    lineHeight: 1,
+    space: true,
+    maxLength: '0',
+    env: 'node'
+});
 
 function init() {
     inquirer.prompt([
@@ -80,7 +93,7 @@ function viewDepartments() {
             console.log(err);
             return;
         }
-        console.log(res.rows);
+        console.table(res.rows);
         init();
     })
 }
@@ -91,7 +104,7 @@ function viewRoles() {
             console.log(err);
             return;
         }
-        console.log(res.rows);
+        console.table(res.rows);
         init();
     })
 }
@@ -109,7 +122,7 @@ function viewEmployees() {
             console.log(err);
             return;
         }
-        console.log(res.rows);
+        console.table(res.rows);
         init();
     })
 }
@@ -173,7 +186,7 @@ function addRole() {
                         console.log(
                             `Added role ${answer.title} with salary ${answer.salary} to the ${answer.department} department in the database!`
                         );
-                        console.log(res.rows);
+                        console.table(res.rows);
                         init();
                     }
                 )
@@ -275,10 +288,8 @@ function updateEmployeeRole() {
 }
 
 function exit() {
-    process.on("exit", () => {
         console.log("Goodbye!");
         pool.end();
-    });
 }
 
 app.listen(PORT, () => {
