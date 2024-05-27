@@ -12,16 +12,7 @@ const pool = new Pool(
     console.log(`Connected to the employeetracker_db database.`)
 )
 
-pool.connect(err => {
-    if (err) {
-        console.log('there is an error connecting to the employeetracker_db database')
-    }
-    console.log('connected to the employeetracker_db database')
-    init();
-}
-);
-
-cfonts.say('EMPLOYEE TRACKER',{
+cfonts.say('EMPLOYEE TRACKER', {
     font: 'block',
     align: 'center',
     colors: ['greenBright'],
@@ -57,7 +48,7 @@ function init() {
             case 'View all departments':
                 viewDepartments();
                 break;
-            case 'view all roles':
+            case 'View all roles':
                 viewRoles();
                 break;
             case 'View all employees':
@@ -75,7 +66,7 @@ function init() {
             case 'Update an employee role':
                 updateEmployeeRole();
                 break;
-            case 'Exit':
+            default:
                 exit();
                 break;
         }
@@ -94,24 +85,24 @@ function viewDepartments() {
 }
 
 function viewRoles() {
-    console.log('test');
-    // pool.query('SELECT * FROM roles', (err, res) => {
-    //     if (err) {
-    //         console.log(err);
-    //         return;
-    //     }
-    //     console.table(res.rows);
-    //     init();
-    // })
+    // title, id, department, salary
+    pool.query('SELECT roles.title, roles.id, departments.department_name, roles.salary FROM roles JOIN departments on roles.department_id = departments.id', (err, res) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        console.table(res.rows);
+        init();
+    })
 }
 
 function viewEmployees() {
     const query = `   
-    SELECT e.id, e.first_name, e.last_name, r.title, d.department_name, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager_name
-    FROM employee e
-    LEFT JOIN roles r ON e.roles_id = r.id
-    LEFT JOIN departments d ON r.department_id = d.id
-    LEFT JOIN employee ON e.manager_id = employee.id;`
+    SELECT employee.id, employee.first_name, employee.last_name, roles.title, departments.department_name, roles.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager_name
+    FROM employee 
+    LEFT JOIN roles ON employee.roles_id = roles.id
+    LEFT JOIN departments  ON roles.department_id = departments.id
+    LEFT JOIN employee m ON m.id = employee.manager_id ;`
 
     pool.query(query, (err, res) => {
         if (err) {
@@ -123,7 +114,7 @@ function viewEmployees() {
     })
 }
 
- function addDepartment() {
+function addDepartment() {
     inquirer.prompt([
         {
             type: 'input',
@@ -132,15 +123,15 @@ function viewEmployees() {
         }
     ])
         .then((answer) => {
-            console.log(answer.name);
-            const query = `INSERT INTO departments (department_name) VALUES ("${answer.name}")`;
-            pool.query(query, (err, res) => {
+
+            const query = `INSERT INTO departments (department_name) VALUES ($1)`;
+            pool.query(query, [answer.department_name], (err, res) => {
                 if (err) {
                     console.log(err);
                     return;
                 }
-                console.log(`Added department ${answer.name} to the database!`);
-                console.log(answer.name);
+                console.log(`Added department ${answer.department_name} to the database!`);
+                console.log(answer.department_name);
                 init();
             });
         });
@@ -158,9 +149,13 @@ function addRole() {
                 message: 'What is the name of the role you would like to add?'
             },
             {
-                type: 'input',
+                type: 'list',
                 name: 'department_id',
-                message: 'What is the department of the role you would like to add?'
+                message: 'What is the department of the role you would like to add?',
+                choices: res.rows.map(department => ({
+                    name: department.department_name,
+                    value: department.id,
+                }))
             },
             {
                 type: 'input',
@@ -169,18 +164,12 @@ function addRole() {
             }
         ])
             .then((answer) => {
-                const department = res.find(
-                    (department) => department.department_name === answer.department_id
-                );
-                pool.query("INSERT INTO roles SET ?", {
-                    title: answer.title,
-                    salary: answer.salary,
-                    department_id: department,
-                },
+
+                pool.query("INSERT INTO roles (title, salary, department_id) VALUES ($1, $2, $3)", [answer.title, answer.salary, answer.department_id],
                     (err, res) => {
                         if (err) throw err;
                         console.log(
-                            `Added role ${answer.title} with salary ${answer.salary} to the ${answer.department} department in the database!`
+                            `Added role ${answer.title} with salary ${answer.salary} to the ${answer.department_id} department in the database!`
                         );
                         console.table(res.rows);
                         init();
@@ -196,52 +185,73 @@ function addEmployee() {
             console.log(err);
             return;
         }
-        inquirer.prompt([
-            {
-                type: 'input',
-                name: 'first_name',
-                message: 'What is the first name of the employee you would like to add?'
-            },
-            {
-                type: 'input',
-                name: 'last_name',
-                message: 'What is the last name of the employee you would like to add?'
-            },
-            {
-                type: 'input',
-                name: 'role_id',
-                message: 'What is the role of the employee you would like to add?',
-                choices: res.rows.map(({ id, title }) => ({ role: id, role: title }))
-            },
-            {
-                type: 'input',
-                name: 'manager_id',
-                message: 'What is the manager of the employee you would like to add?'
+        const roles = res.rows.map(roles =>
+        ({
+            name: roles.title,
+            value: roles.id,
+        }))
+        pool.query('SELECT id, first_name AS name FROM employee', (err, res) => {
+            if (err) {
+                console.log(err);
+                return;
             }
-        ])
-            .then((answer) => {
-                const query = "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)";
-                const values = [
-                    answer.firstName,
-                    answer.lastName,
-                    answer.roleId,
-                    answer.managerId,
-                ];
-                connection.query(query, values, (err) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    console.log("Employee added successfully");
-                    init();
-                });
-            })
+            const managers = res.rows.map(({ id, name }) =>
+            ({
+                name: name,
+                value: id,
+            }));
 
+            inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'first_name',
+                    message: 'What is the first name of the employee you would like to add?'
+                },
+                {
+                    type: 'input',
+                    name: 'last_name',
+                    message: 'What is the last name of the employee you would like to add?'
+                },
+                {
+                    type: 'list',
+                    name: 'role_id',
+                    message: 'What is the role of the employee you would like to add?',
+                    choices: roles,
+                },
+                {
+                    type: 'list',
+                    name: 'manager_id',
+                    message: 'What is the manager of the employee you would like to add?',
+                    choices: managers,
+                }
+            ])
+                .then((answer) => {
+                    const query = "INSERT INTO employee (first_name,last_name,roles_id, manager_id) VALUES ($1, $2, $3,$4)";
+                    const values = [
+                        answer.first_name,
+                        answer.last_name,
+                        answer.role_id,
+                        answer.manager_id,
+                    ];
+                    pool.query(query, values, (err, res) => {
+                        if (err) {
+                            console.error(err);
+                            return;
+                        }
+                        console.log(res.rows);
+                        console.log(`
+                    Employee ${answer.first_name} ${answer.last_name}to the role ${answer.role_id} with the manager ${answer.manager_id} has been added successfully`
+                        );
+                        init();
+                    });
+                })
+
+        })
     })
 }
 
 function updateEmployeeRole() {
-    const queryEmp = "SELECT  employee.id, employee.first_name, employee.last_name roles.title FROM employee LEFT JOIN roles ON employee.roles.id = roles.id";
+    const queryEmp = "SELECT employee.id, employee.first_name, employee.last_name, roles.title FROM employee LEFT JOIN roles ON employee.roles_id = roles.id";
     const queryRol = "SELECT * FROM roles";
     pool.query(queryEmp, (err, resEmployees) => {
         if (err) {
@@ -256,19 +266,23 @@ function updateEmployeeRole() {
                     type: "list",
                     name: "employee",
                     message: "Select the employee to update:",
-                    choices: resEmployees.map((employee) => `${employee.first_name} ${employee.last_name}`)
+                    choices: resEmployees.rows.map((employee) => `${employee.first_name} ${employee.last_name}`)
                 },
                 {
                     type: "list",
                     name: "role",
                     message: "Select the new role:",
-                    choices: resRoles.map((role) => role.title)
+                    choices: resRoles.rows.map(roles => ({
+                        name: roles.title,
+                        value: roles.id,
+                    }))
+
                 },
             ])
                 .then((answer) => {
-                    const employee = resEmployees.find((employee) => `${employee.first_name}${employee.last_name}` === answer.employee);
+                    const employee = resEmployees.find((employee) => `${employee.first_name} ${employee.last_name}` === answer.employee);
                     const role = resRoles.find((role) => role.title === answer.role);
-                    const query = "UPDATE employee SET role_id =? WHERE id =?";
+                    const query = "UPDATE employee SET role_id =$1 WHERE id =$1";
                     const values = [role.id, employee.id];
                     pool.query(query, values, (err, res) => {
                         if (err) {
@@ -284,6 +298,8 @@ function updateEmployeeRole() {
 }
 
 function exit() {
-        console.log("Goodbye!");
-        pool.end();
+    console.log("Goodbye!");
+    pool.end();
 }
+
+init()
