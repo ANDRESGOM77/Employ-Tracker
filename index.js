@@ -38,6 +38,7 @@ function init() {
                 'Add a role',
                 'Add an employee',
                 'Update an employee role',
+                'Delete Employee',
                 'Exit'
             ]
         }
@@ -65,6 +66,9 @@ function init() {
                 break;
             case 'Update an employee role':
                 updateEmployeeRole();
+                break;
+            case 'Delete Employee':
+                deleteEmployee();
                 break;
             default:
                 exit();
@@ -164,7 +168,6 @@ function addRole() {
             }
         ])
             .then((answer) => {
-
                 pool.query("INSERT INTO roles (title, salary, department_id) VALUES ($1, $2, $3)", [answer.title, answer.salary, answer.department_id],
                     (err, res) => {
                         if (err) throw err;
@@ -266,7 +269,12 @@ function updateEmployeeRole() {
                     type: "list",
                     name: "employee",
                     message: "Select the employee to update:",
-                    choices: resEmployees.rows.map((employee) => `${employee.first_name} ${employee.last_name}`)
+                    choices: resEmployees.rows.map((employee) => 
+                        ({
+                        name:`${employee.first_name} ${employee.last_name}`,
+                        value: employee.id,
+                    }))
+                        
                 },
                 {
                     type: "list",
@@ -280,21 +288,56 @@ function updateEmployeeRole() {
                 },
             ])
                 .then((answer) => {
-                    const employee = resEmployees.find((employee) => `${employee.first_name} ${employee.last_name}` === answer.employee);
-                    const role = resRoles.find((role) => role.title === answer.role);
-                    const query = "UPDATE employee SET role_id =$1 WHERE id =$1";
-                    const values = [role.id, employee.id];
+                    const query = "UPDATE employee SET roles_id =$1 WHERE id =$2";
+                    const values = [answer.role, answer.employee];
+                    console.log(values)
                     pool.query(query, values, (err, res) => {
                         if (err) {
                             console.log(err);
                             return;
                         }
-                        console.log(`Updated employee ${employee.first_name} ${employee.last_name}'s role to ${role.title}`);
+                        console.log(`Updated employee has been success`);
                         init();
                     })
                 })
         })
     })
+}
+
+function deleteEmployee() {
+    const query = "SELECT * FROM employee";
+    pool.query(query, (err, res) => {
+        if (err){
+            console.log(err);
+        }
+        console.log(res.rows);
+        const employeeList = res.rows.map((employee) => ({
+            name: `${employee.first_name} ${employee.last_name}`,
+            value: employee.id,
+        }));
+        employeeList.push({ name: "Go Back", value: "back" });
+        inquirer
+            .prompt({
+                type: "list",
+                name: "id",
+                message: "Select the employee you want to delete:",
+                choices: employeeList,
+            })
+            .then((answer) => {
+                if (answer.id === "back") {
+                console.log('all good');
+                }
+                const query = "DELETE FROM employee WHERE id = $1";
+                pool.query(query, [answer.id], (err, res) => {
+                    if (err) throw err;
+                    console.log(
+                        `Deleted employee with ID ${answer.id} from the database!`
+                        
+                    );
+                    init();
+                });
+            });
+    });
 }
 
 function exit() {
