@@ -4,8 +4,8 @@ const cfonts = require('cfonts');
 
 const pool = new Pool(
     {
-        user: 'postgres',
-        password: 'Manolo19',
+        user: '',
+        password: '',
         host: 'localhost',
         database: 'employeetracker_db'
     },
@@ -325,7 +325,8 @@ function deleteEmployee() {
             })
             .then((answer) => {
                 if (answer.id === "back") {
-                console.log('all good');
+                init();
+                return;
                 }
                 const query = "DELETE FROM employee WHERE id = $1";
                 pool.query(query, [answer.id], (err, res) => {
